@@ -35,7 +35,7 @@ void unaInstruccion(arregloFunciones *ops, cuatroBytes registros[CANTREGISTROS],
         (registros[3])++;
     }
     registros[5] += opAux;
-    ops[(registros[4])&0x1F](registros[5], registros[6], registros, memoria, tabla);
+    ops[(registros[4])&0x1F](registros, memoria, tabla);
     /*
     printf("Registros\n");
         printf("A  %8x\n",registros[10]);
@@ -84,5 +84,6 @@ void ponerSegmentoEnTabla(unByte id, cuatroBytes posMem, unByte *indiceSegmento,
         tabla[(*indiceSegmento)][1] = ls;
         (*indiceSegmento)++;
     }
+}
 
 

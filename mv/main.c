@@ -1,3 +1,9 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <time.h>
+
 #include "tiposyctes.h"
 #include "verificaciones.h"
 #include "utiles.h"
@@ -6,10 +12,10 @@
 #include "disassembler.h"
 
 int main(int argc, char *argv[]) {
-	 srand(time(NULL));
-	 // Verifica que se pasaron los parámetros adecuados
-	 if (argc<2) {
-    	printf("Uso (v1): vmx <archivo_origen.vmx> [-d]\n");
+    srand(time(NULL));
+    // Verifica que se pasaron los parámetros adecuados
+    if (argc<2) {
+        printf("Uso (v1): vmx <archivo_origen.vmx> [-d]\n");
     	//printf("Uso (v2): vmx <archivo_origen.vmx> <archivo_imagen.vmx> [m=M] [-d] [-p param1 param2 ... paramN]\n");
     	return 1;
 	}
@@ -18,27 +24,27 @@ int main(int argc, char *argv[]) {
     unByte hayVmx = 0;
     unByte v1 = 0;
 
-   int contArg=1;
-   cuatroBytes tamanyoMemoria = 16384;
+    int contArg=1;
+    cuatroBytes tamanyoMemoria = 16384;
 
-   cuatroBytes registros[CANTREGISTROS];
+    cuatroBytes registros[CANTREGISTROS];
 	unByte memoria[MAXMEMORIA];
 	dosBytes tabla[MAXSEGMENTOS][2];
 
 	dosBytes longCS;
-    hayD = 0;
+    unByte hayD = 0;
 
-   FILE *vmx;
-   // vmx
-   if(contArg<argc && strcmp(argv[contArg]+strlen(argv[contArg])-4,".vmx")==0){
-       vmx = fopen(argv[contArg],"rb");
+    FILE *vmx;
+    // vmx
+    if(contArg<argc && strcmp(argv[contArg]+strlen(argv[contArg])-4,".vmx")==0){
+        vmx = fopen(argv[contArg],"rb");
        if (vmx == NULL) {
            printf("Error al abrir el vmx.\n");
            exit(1);
        }
        contArg++;
        hayVmx = 1;
-   }
+    }
     if (!hayVmx) {
         printf("Error: no se recibió vmx.\n");
         exit(1);
@@ -68,7 +74,7 @@ int main(int argc, char *argv[]) {
 
         if (version!=1){
             printf("La versión no es 1\n");
-            Exit(1);
+            exit(1);
         }
 
         longCS = getLong(vmx,2);
@@ -118,24 +124,26 @@ int main(int argc, char *argv[]) {
         fclose(vmx);
     }
 
+    //for (int k=0;k<50;k++)
+        //printf("%x\n",memoria[k]);
     if (hayD)
         disassembler(0,0,longCS,0,0,memoria);
     // Declara variables
     unByte v2=0;
-    arregloFunciones ops[] = {
-    	SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN,
+    arregloFunciones ops[] = {SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN,
     	NOT, FEXC, FEXC, (v2) ? PUSH : FEXC, (v2) ? POP : FEXC, (v2) ? CALL : FEXC, (v2) ? RET : FEXC, STOP,
     	MOV, ADD, SUB, MUL, DIV, CMP, SHL,
-    	SHR, SAR, AND, OR, XOR, SWAP, LDL, LDH, RND
-	};
+    	SHR, SAR, AND, OR, XOR, SWAP, LDL, LDH, RND};
 	// IPea
-	cuatroBytes opA, opB;
 	cuatroBytes maxIP = registros[26]+tabla[registros[26]>>16][1];
 
     while(registros[26]<=registros[3] && registros[3]<=maxIP) { // while el valor de IP sea menor al tamaño del CS
+          //for (int mem=133; mem<160; mem++)
+          //  printf("%2x - %2x\n", mem, memoria[mem]);
         unaInstruccion(ops,registros,memoria,tabla);
-
     }
+
 	return 0;
 }
+
 

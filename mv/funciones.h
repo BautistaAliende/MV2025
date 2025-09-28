@@ -1,13 +1,13 @@
 //#include "tiposyctes.h"
 //#include "verificaciones.h"
 //#include "utiles.h"
-#include <string.h>
+//include <string.h>
 #include "sys.h"
 
 //void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], unByte id);
-void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char dir);
-void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2], unByte id);
-void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char bytes);
+//void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char dir);
+//void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2], unByte id);
+//void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char bytes);
 
 void SYS(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
     cuatroBytes opB;
@@ -68,7 +68,7 @@ void NOT(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 
 	excepcionTipoDeOperandoInvalido(tipo);
 	excepcionOperandoNulo(tipo);
-	excepcionGuardarEnInmediato(tipo,"NOT");
+	excepcionGuardarEnInmediato(tipo);//,"NOT");
 
 	if (tipo == 1) {
         registros[codigo] = ~(registros[codigo]);
@@ -93,7 +93,7 @@ void MOV(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 	unByte tipo = tipoDeOperando(registros[5]);
 
 	cuatroBytes opB = dato(registros[6],registros, memoria,tabla);
-	excepcionGuardarEnInmediato(tipo,"MOV");
+	excepcionGuardarEnInmediato(tipo);//,"MOV");
 
 	if (tipo==1) {
         int codigo = (registros[5]&0x1F);
@@ -113,7 +113,7 @@ void MOV(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], unByte id) {
 	unByte tipo = tipoDeOperando(registros[5]);
 	cuatroBytes codigo;
-	cuatroBytes opB = dato(registros[5],registros,memoria,tabla);
+	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
 	char oa[5];
 	switch (id) {
@@ -126,7 +126,7 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
             exit(1);
         }
 	}
-	excepcionGuardarEnInmediato(tipo,oa);
+	excepcionGuardarEnInmediato(tipo);//,oa);
 
 	if (id == 3 && opB == 0) {
         printf("Error: división por cero.\n");
@@ -174,6 +174,9 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	cuatroBytes auxMem = 0;
+
+            //printf("indMem: %2x\n",indMem);
+
             /*
         	switch(codigo) {
                 case 1: verificarDS(indMem,registros,tabla); verificarDS(indMem+3,registros,tabla); break;
@@ -197,6 +200,8 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
                 }
             }
         	cambiaCC(auxMem,registros);
+        	//printf("indMem: %2x\n",indMem);
+        	//printf("auxMem: %2x\n",auxMem);
         	for(int i=3;i>=0;i--) {
                 memoria[indMem+i] = auxMem;
                 auxMem = auxMem>>8;
@@ -215,7 +220,7 @@ void SWAP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
     int tipoA = tipoDeOperando(registros[5]),
         tipoB = tipoDeOperando(registros[6]);
     // B a A
-    excepcionGuardarEnInmediato(tipoA,"SWAP");
+    excepcionGuardarEnInmediato(tipoA);//,"SWAP");
 
     cuatroBytes auxA = dato(registros[5],registros,memoria,tabla);
     cuatroBytes auxB = dato(registros[6],registros,memoria,tabla);
@@ -238,7 +243,7 @@ void SWAP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
             }
         }
     // A a B
-    excepcionGuardarEnInmediato(tipoB,"SWAP");
+    excepcionGuardarEnInmediato(tipoB);//,"SWAP");
 
     if (tipoB == 1) {
         codigo = (registros[6]&0x1F);
@@ -271,7 +276,7 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 	cuatroBytes codigo, auxReg;
 
 	cuatroBytes opB = dato(registros[6], registros,memoria,tabla);
-	excepcionGuardarEnInmediato(tipo,"CMP");
+	excepcionGuardarEnInmediato(tipo);//,"CMP");
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
@@ -315,18 +320,9 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
         	cambiaCC(auxMem,registros);
         }
 }
-void SHL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-	sh(registros,memoria,tabla,-1);
-}
-void SHR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-    sh(registros,memoria,tabla,1);
-}
-void SAR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-    sh(registros,memoria,tabla,0);
-}
 
 void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char dir) {
-	unByte tipo = tipoDeOperando(opA);
+	unByte tipo = tipoDeOperando(registros[5]);
 	cuatroBytes codigo, auxReg;
 	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
@@ -371,6 +367,9 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
 	} else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
+
+            auxReg = registros[codigo];
+
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	long auxMem = 0;
 
@@ -401,15 +400,17 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
         	}
     	}
 }
-void AND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-    operacionesBitABit(registros[5],registros[6],registros,memoria,tabla,0);
+
+void SHL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+	sh(registros,memoria,tabla,-1);
 }
-void OR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-	operacionesBitABit(registros[5],registros[6],registros,memoria,tabla,1);
+void SHR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+    sh(registros,memoria,tabla,1);
 }
-void XOR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-	operacionesBitABit(registros[5],registros[6],registros,memoria,tabla,2);
+void SAR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+    sh(registros,memoria,tabla,0);
 }
+
 void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2], unByte id) {
 	unByte tipo = tipoDeOperando(registros[5]);
 	cuatroBytes codigo;
@@ -425,7 +426,7 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
             exit(1);
         }
 	}
-	excepcionGuardarEnInmediato(tipo,ol);
+	excepcionGuardarEnInmediato(tipo);//,ol);
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
@@ -455,7 +456,7 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
         registros[codigo] = auxReg;//(registros[codigo]&(~mask))+(auxReg&mask);
 	} else
     	if (tipo==3) {
-            codigo = ((registros[5]>>16)&0x1F)
+            codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	int auxMem = 0;
 
@@ -483,12 +484,17 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
         	}
     	}
 }
-void LDL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-	ld(registros[5],registros[6],registros,memoria,tabla,1);
+
+void AND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+    operacionesBitABit(registros,memoria,tabla,0);
 }
-void LDH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-    ld(registros[5],registros[6],registros,memoria,tabla,-1);
+void OR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+	operacionesBitABit(registros,memoria,tabla,1);
 }
+void XOR(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+	operacionesBitABit(registros,memoria,tabla,2);
+}
+
 void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2], char bytes) {
 	unByte tipo = tipoDeOperando(registros[5]);
 	cuatroBytes codigo;
@@ -498,21 +504,24 @@ void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
         printf("Error: LD id = 0.\n");
         exit(1);
 	}
-	excepcionGuardarEnInmediato(tipo,(bytes<0)?"LDH":"LDL");
+	excepcionGuardarEnInmediato(tipo);//,(bytes<0)?"LDH":"LDL");
 
 	if (tipo==1) {
          codigo = (registros[5]&0x1F);
-    	//unByte sector = (&0x0C)>>2;
-    	//cuatroBytes mask = (bytes<0) ? 0xFFFF0000 : 0x0000FFFF;
-    	//if (sector == 0) {
-        //    if (bytes<0)
-        //        opB = opB<<16;
-        registros[codigo] = opB;//(registros[codigo]&(~mask)) + (opB&mask);
-        } else {
-            printf("Error [%s]: Se intentó cargar 2 bytes en una sección de registro.\n",(bytes<0)?"LDH":"LDL");
-            exit(1);
-        }
-	} else
+    	//unByte sector = (registros[5]&0x0C)>>2;
+    	cuatroBytes mask = (bytes<0) ? 0xFFFF0000 : 0x0000FFFF;
+
+    	//ojo
+    	int sector =0;
+    	if (sector == 0)
+            if (bytes<0)
+                opB = opB<<16;
+        registros[codigo] = (registros[codigo]&(~mask)) + (opB&mask);
+        //} else {
+        //   printf("Error [%s]: Se intentó cargar 2 bytes en una sección de registro.\n",(bytes<0)?"LDH":"LDL");
+        //    exit(1);
+    }
+	 else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
@@ -531,6 +540,14 @@ void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
         	}
     	}
 }
+
+void LDL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+	ld(registros,memoria,tabla,1);
+}
+void LDH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+    ld(registros,memoria,tabla,-1);
+}
+
 void RND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
 	double randomAux = (double)rand()/(RAND_MAX+1.0);
 	char tipo = (registros[5]&0x01000000)>>24;
@@ -538,7 +555,7 @@ void RND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
     cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 	opB = (cuatroBytes)(randomAux*opB);
 
-	excepcionGuardarEnInmediato(tipo,"RND");
+	excepcionGuardarEnInmediato(tipo);//,"RND");
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
@@ -565,7 +582,70 @@ void RND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
             }
     	}
 }
-// 1F
+
+// 09
+void FEXC(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
+	printf("Error: función no existente\n");
+	exit(1);
+}
+//0A
+void PUSH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+    registros[6] -= 4;
+    unByte baseSP = baseSegmento(6,registros);
+    cuatroBytes indMem = tabla[baseSP][0]+(registros[6]&0xFFFF);
+    verificarStackOverflow(indMem,registros,tabla);
+
+    cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
+
+    for(unByte i=3; i>=0; i--){
+        memoria[indMem+i] = opB;
+        opB = opB>>8;
+    }
+}
+void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+    int baseSP = registros[6]>>16;
+    int indMem = tabla[baseSP][0] + (registros[6]&0xFFFF);
+    uint32_t dato = 0;
+
+    for(unByte i=0;i<4;i++){
+        verificarStackUnderflow(indMem+i,registros,tabla);
+        dato = dato<<8;
+        dato |= (unsigned char) memoria[indMem+i];
+    }
+
+    int tipo = tipoDeOperando(registros[6]);
+    int codigo = (registros[6]&0xF0)>>4;
+
+    if (tipo==1) {
+        int sector = (registros[6]&0x0C)>>2;
+        if (sector == 2)
+            dato = dato<<8;
+        int mask = mascara(sector);
+
+        registros[codigo] = (registros[codigo]&(~mask))+(dato&mask);
+
+        registros[6] += 4;
+    } else
+    if (tipo==3) {
+        dosBytes indMem = indiceDeMemoria(registros[6],registros[codigo],tabla);
+
+        for(unByte i=3;i>=0;i--) {
+            memoria[indMem+i] = dato;
+            dato = dato>>8;
+        }
+
+        registros[6] += 4;
+    }
+}
+void CALL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+    //cuatroBytes auxOpB = (0x40000050);
+    PUSH(registros,memoria,tabla);
+    JMP(registros,memoria,tabla);
+}
+void RET(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
+    //cuatroBytes auxOpB = (0x40000050);
+    POP(registros, memoria, tabla);
+}
 
 
 

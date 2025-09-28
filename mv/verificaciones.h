@@ -67,9 +67,9 @@ void excepcionOperandoNulo(unByte tipo) {
         exit(1);
     }
 }
-void excepcionGuardarEnInmediato(unByte tipo, char nombre[MAXNOMBRE]) {
+void excepcionGuardarEnInmediato(unByte tipo){//, char nombre[MAXNOMBRE]) {
     if (tipo == 2) {
-        printf("Error [%s]: Se intentó guardar un resultado en un operando inmediato.\n",nombre);
+        printf("Error : Se intentó guardar un resultado en un operando inmediato.\n");//,nombre);
         exit(1);
 	}
 }

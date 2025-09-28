@@ -1,8 +1,8 @@
 //include <tiposyctes.h>
 
 void sysRead(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-    int cantCeldas = registros[12]&0x00FF,
-        tamanyoCeldas = (registros[12]&0xFF00)>>8;
+    int cantCeldas = registros[12]&0xFFFF,
+        tamanyoCeldas = (registros[12]>>16)&0xFFFF;
 
     //posicion inicial indicada en EDX
     long baseEdx = (registros[13]&0xFFFF0000)>>16;
@@ -77,8 +77,10 @@ void sysRead(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], d
 }
 
 void sysWrite(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
-    int cantCeldas = registros[12]&0x00FF,
-        tamanyoCeldas = (registros[12]&0xFF00)>>8;
+    int cantCeldas = registros[12]&0xFFFF,
+        tamanyoCeldas = (registros[12]>>16)&0xFFFF;
+
+    //printf("EDX: %8x\n",registros[12]);
 
     //posicion inicial indicada en EDX
     long baseEdx = (registros[13]&0xFFFF0000)>>16;
@@ -104,7 +106,9 @@ void sysWrite(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], 
                 datoEdx += (unsigned char)memoria[indiceMemoria+j];
             }
             */
+            //printf("indMem: %2x\n",indiceMemoria+tamanyoCeldas*i);
             datoEdx = (memoria[indiceMemoria+tamanyoCeldas*i]&0x80) ? -1 : 0;
+            //printf("tamanio celdas: %d\n",tamanyoCeldas);
             for(j=0;j<tamanyoCeldas;j++){
                 datoEdx = datoEdx<<8;
                 datoEdx += (unsigned char)memoria[indiceMemoria+tamanyoCeldas*i+j];

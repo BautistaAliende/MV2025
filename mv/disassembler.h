@@ -13,6 +13,206 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2);
 int longitudNum(long num);
 void identar(int cant);
 
+void identar(int cant){
+    for(int i = 0; i < cant; i++)
+        printf(" ");
+}
+
+int longitudNum(long num) {
+    // Si es 0 ocupa un espacio pero no entra al while
+    int i = (num == 0);
+    // El signo "-" aporta a la longitud en caracteres
+    if(num < 0) {
+        num = -num;
+        i++;
+    }
+    while(num > 0){
+        num = num / 10;
+        i++;
+    }
+    return i;
+}
+
+void errorDissasembler(char msjError[]) {
+    printf("\n\n%s\n\n", msjError);
+    //exit(1);
+}
+
+// Todos los registros deben ocupar siempre 3 caracteres
+void escribeRegistro(unByte registro, int esV2){
+    unByte sectorReg = (registro >> 2)&0x3;
+    registro = registro&0x1F;//(registro >> 4)&0xF;
+
+    //printf("Entre a escribe registro\n");
+    //printf("Registro: %2x\n", registro);
+
+    if(!esV2 && (( 7 <= registro && registro <= 9) || (18 <= registro && registro <= 25)|| (28 <= registro && registro <= 31) ))
+      errorDissasembler("Error: Registro inválido para la versión de la máquina.\n");
+
+    sectorReg = 0; //: Registro completo
+    if(sectorReg == 0 && registro >= 0xA && registro <= 0xF)
+        printf("E");
+    else
+        printf(" ");
+
+    switch(registro){
+        case(0x0): printf("LAR"); break;
+        case(0x1): printf("MAR"); break;
+        case(0x2): printf("MBR"); break;
+        case(0x3): printf("IP"); break;
+        case(0x4): printf("OPC"); break;
+        case(0x5): printf("OP1"); break;
+        case(0x6): printf("OP2"); break;
+        //case(0x7): printf("RESERVA"); break;
+        //case(0x8): printf("CC"); break;
+        //case(0x9): printf("AC"); break;
+        case(0xA): printf("A"); break;
+        case(0xB): printf("B"); break;
+        case(0xC): printf("C"); break;
+        case(0xD): printf("D"); break;
+        case(0xE): printf("E"); break;
+        case(0xF): printf("F"); break;
+        case(0x10): printf("AC"); break;
+        case(0x11): printf("CC"); break;
+        case(0x1A): printf("CS"); break;
+        case(0x1B): printf("DS"); break;
+
+        default: errorDissasembler("Error: Registro inválido");
+    }
+
+    if(registro >= 0xA && registro <= 0xF){
+        if(sectorReg == 0 || sectorReg == 3)
+            printf("X");
+        else
+            if(sectorReg == 1)
+                printf("L");
+            else
+                printf("H");
+    }
+
+}
+
+void escribeInstruccion(unByte instruccion, int esV2){
+    if(!esV2 && (0x0B <= instruccion && instruccion <= 0x0E))
+      errorDissasembler("Error: Instruccion invalida para la version de la maquina");
+
+    switch(instruccion){
+        case 0x00: printf("SYS ");  break;
+        case 0x01: printf("JMP ");  break;
+        case 0x02: printf("JZ  ");  break;
+        case 0x03: printf("JP  ");  break;
+        case 0x04: printf("JN  ");  break;
+        case 0x05: printf("JNZ ");  break;
+        case 0x06: printf("JNP ");  break;
+        case 0x07: printf("JNN ");  break;
+        case 0x08: printf("NOT ");  break;
+        //case 0x0B: printf("PUSH");  break; // V2
+        //case 0x0C: printf("POP ");  break; // V2
+        //case 0x0D: printf("CALL");  break; // V2
+        //case 0x0E: printf("RET ");  break; // V2
+        case 0x0F: printf("STOP");  break;
+        case 0x10: printf("MOV ");  break;
+        case 0x11: printf("ADD ");  break;
+        case 0x12: printf("SUB ");  break;
+        case 0x13: printf("MUL ");  break;
+        case 0x14: printf("DIV ");  break;
+        case 0x15: printf("CMP ");  break;
+        case 0x16: printf("SHL ");  break;
+        case 0x17: printf("SHR ");  break;
+        case 0x18: printf("SAR ");  break;
+        case 0x19: printf("AND ");  break;
+        case 0x1A: printf("OR  ");  break;
+        case 0x1B: printf("XOR ");  break;
+        case 0x1C: printf("SWAP ");  break;
+        case 0x1D: printf("LDL ");  break;
+        case 0x1E: printf("LDH ");  break;
+        case 0x1F: printf("RND ");  break;
+        default: errorDissasembler("Error: Codigo operacion invalido.");
+    }
+    printf(" ");
+}
+
+void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
+    dosBytes offset = (bytesMemoria&0x0FFFF); //16 Bits del offset
+    unByte codReg = ((bytesMemoria>>16)&0xFF);
+    unByte registro = (codReg&0x1F);//(codReg >> 4)&0xF;
+    unByte tamCelda = 0;//bytesMemoria&0x3;
+    int espacioOcupadoOffset;
+
+    if(!esV2 && tamCelda != 0)
+        errorDissasembler("Error: Tamaño de celda invalido para esta version");
+
+    // 2 por el tamanio [] y 1 por el operando de memoria (w, b)
+    int espacioOcupadoAdicional = 2 + ((esV2 && tamCelda != 0)? 1 : 0);
+    // 3 por el tamanio del registro
+    espacioOcupadoAdicional += (registro != 0x1)? 3 : 0;
+    // agregar el " + ", " - "
+    espacioOcupadoAdicional += (offset != 0 && registro != 0x1)? 3 : 0;
+    // Si el offset es 0, luego longitudNum(0) = 1. Por eso el if
+    if(offset == 0 && registro != 0x1)
+        espacioOcupadoOffset = 0;
+    else
+        espacioOcupadoOffset = longitudNum(offset);
+
+    identar(IDENTACION_MAX - espacioOcupadoOffset - espacioOcupadoAdicional);
+
+    if(esV2 && tamCelda != 0)
+        switch(tamCelda){
+            case(0x2):  printf("w"); break;
+            case(0x3):  printf("b"); break;
+            default:    errorDissasembler("Error: Tamaño celda invalido\n");
+        }
+
+    if(registro == 0x1)
+        printf("[%d", offset); //Es el DS, por lo tanto escribe: [offset]
+    else {
+        printf("[");
+        escribeRegistro(codReg, esV2);
+
+        if(offset < 0)
+            offset = -offset;
+
+        // Se agrega el offset si se puede
+        if(offset != 0)
+            printf("%s%d", offset > 0? " + ": " - ", offset);
+    }
+    printf("]");
+}
+
+// Decodifica las operaciones A y B.
+// op es un numero binario con 2 bits [00, 01, 10, 11]
+void escribeOperando(unByte op, int ir, unByte memoria[], int esV2){
+    dosBytes inmediato;
+    cuatroBytes bytesMemoria;
+
+
+    //printf("Entre a escribeoperando\n");
+    //printf("op: %2x\n", op);
+    //printf("ir: %2x\n", ir);
+    //printf("memir: %2x\n", memoria[ir]);
+
+    switch(op&0xF){
+        // (00) Ninguno
+        case(0x0): break;
+        // (01) Registro
+        case(0x1):  identar(IDENTACION_MAX - 3);
+                    //printf("Entre al case bitch \n");
+                    //printf("memir: %2x\n", memoria[ir]);
+                    escribeRegistro(memoria[ir], esV2);
+                    break;
+        // (10) Inmediato
+        case(0x2):  inmediato = ((memoria[ir]&0xFF) << 8) + (memoria[ir + 1]&0xFF);
+                    identar(IDENTACION_MAX - longitudNum(inmediato));
+                    printf("%d",inmediato);
+                    break;
+        // (11) Memoria
+        case(0x3):  bytesMemoria = (memoria[ir] << 16) + (memoria[ir + 1] << 8);
+                    bytesMemoria += (memoria[ir + 2]&0xFF);
+                    escribeMemoria(bytesMemoria, esV2);
+                    break;
+    }
+}
+
 // inicio tendrá, si es posible, la dirección de inicio de KS; de lo contrario, su valor será inicioCS.
 void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes entryPoint, int esV2, unByte memoria[MAXMEMORIA]){
     unByte bitsA, bitsB, codOp;
@@ -20,7 +220,9 @@ void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes 
     int ir = inicio>-1 ? inicio : inicioCS;
     printf("\n\n");
 
+    /*
     while(ir < inicioCS){
+        //printf("Entre a la 216\n");
         printf(" [%04X]", ir);
         i = ir;
         cantBytesLeidos = 0;
@@ -51,6 +253,9 @@ void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes 
         printf("\"\n");
         ir++;
     }
+
+    */
+
     ir = inicioCS;
 
     // empieza la diversion
@@ -94,195 +299,7 @@ void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes 
     printf("\n\n");
 }
 
-void escribeInstruccion(unByte instruccion, int esV2){
-    if(!esV2 && (0x0B <= instruccion && instruccion <= 0x0E))
-      errorDissasembler("Error: Instruccion invalida para la version de la maquina");
 
-    switch(instruccion){
-        case 0x00: printf("SYS ");  break;
-        case 0x01: printf("JMP ");  break;
-        case 0x02: printf("JZ  ");  break;
-        case 0x03: printf("JP  ");  break;
-        case 0x04: printf("JN  ");  break;
-        case 0x05: printf("JNZ ");  break;
-        case 0x06: printf("JNP ");  break;
-        case 0x07: printf("JNN ");  break;
-        case 0x08: printf("NOT ");  break;
-        //case 0x0B: printf("PUSH");  break; // V2
-        //case 0x0C: printf("POP ");  break; // V2
-        //case 0x0D: printf("CALL");  break; // V2
-        //case 0x0E: printf("RET ");  break; // V2
-        case 0x0F: printf("STOP");  break;
-        case 0x10: printf("MOV ");  break;
-        case 0x11: printf("ADD ");  break;
-        case 0x12: printf("SUB ");  break;
-        case 0x13: printf("MUL ");  break;
-        case 0x14: printf("DIV ");  break;
-        case 0x15: printf("CMP ");  break;
-        case 0x16: printf("SHL ");  break;
-        case 0x17: printf("SHR ");  break;
-        case 0x18: printf("SAR ");  break;
-        case 0x19: printf("AND ");  break;
-        case 0x1A: printf("OR  ");  break;
-        case 0x1B: printf("XOR ");  break;
-        case 0x1C: printf("SWAP ");  break;
-        case 0x1D: printf("LDL ");  break;
-        case 0x1E: printf("LDH ");  break;
-        case 0x1F: printf("RND ");  break;
-        default: errorDissasembler("Error: Codigo operacion invalido.");
-    }
-    printf(" ");
-}
-
-// Decodifica las operaciones A y B.
-// op es un numero binario con 2 bits [00, 01, 10, 11]
-void escribeOperando(unByte op, int ir, unByte memoria[], int esV2){
-    dosBytes inmediato;
-    cuatroBytes bytesMemoria;
-
-
-    switch(op&0xF){
-        // (00) Ninguno
-        case(0x0): break;
-        // (01) Registro
-        case(0x1):  identar(IDENTACION_MAX - 3);
-                    escribeRegistro(memoria[ir], esV2);
-                    break;
-        // (10) Inmediato
-        case(0x2):  inmediato = ((memoria[ir]&0xFF) << 8) + (memoria[ir + 1]&0xFF);
-                    identar(IDENTACION_MAX - longitudNum(inmediato));
-                    printf("%d",inmediato);
-                    break;
-        // (11) Memoria
-        case(0x3):  bytesMemoria = (memoria[ir] << 16) + (memoria[ir + 1] << 8);
-                    bytesMemoria += (memoria[ir + 2]&0xFF);
-                    escribeMemoria(bytesMemoria, esV2);
-                    break;
-    }
-}
-
-// Todos los registros deben ocupar siempre 3 caracteres
-void escribeRegistro(unByte registro, int esV2){
-    unByte sectorReg = (registro >> 2)&0x3;
-    registro = (registro >> 4)&0xF;
-
-    if(!esV2 && (( 0x2 <= registro && registro <= 0x4) || (0x6 <= registro && registro <= 0x7)))
-      errorDissasembler("Error: Registro inválido para la versión de la máquina.\n");
-
-    // sectorReg == 00 : Registro completo
-    if(sectorReg == 0 && registro >= 0xA)
-        printf("E");
-    else
-        printf(" ");
-
-    switch(registro){
-        case(0x0): printf("LAR"); break;
-        case(0x1): printf("MAR"); break;
-        case(0x2): printf("MBR"); break;
-        case(0x3): printf("IP"); break;
-        case(0x4): printf("OPC"); break;
-        case(0x5): printf("OP1"); break;
-        case(0x6): printf("OP2"); break;
-        //case(0x7): printf("RESERVA"); break;
-        //case(0x8): printf("CC"); break;
-        //case(0x9): printf("AC"); break;
-        case(0xA): printf("A"); break;
-        case(0xB): printf("B"); break;
-        case(0xC): printf("C"); break;
-        case(0xD): printf("D"); break;
-        case(0xE): printf("E"); break;
-        case(0xF): printf("F"); break;
-        case(0x10): printf("AC"); break;
-        case(0x11): printf("CC"); break;
-        case(0x1A): printf("CS"); break;
-        case(0x1B): printf("DS"); break;
-
-        default: errorDissasembler("Error: Registro inválido");
-    }
-
-    if(registro >= 0xA){
-        if(sectorReg == 0 || sectorReg == 3)
-            printf("X");
-        else
-            if(sectorReg == 1)
-                printf("L");
-            else
-                printf("H");
-    }
-
-}
-
-void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
-    dosBytes offset = (bytesMemoria >> 8);
-    unByte codReg = (bytesMemoria&0xFF);
-    unByte registro = (codReg >> 4)&0xF;
-    unByte tamCelda = bytesMemoria&0x3;
-    int espacioOcupadoOffset;
-
-    if(!esV2 && tamCelda != 0)
-        errorDissasembler("Error: Tamaño de celda invalido para esta version");
-
-    // 2 por el tamanio [] y 1 por el operando de memoria (w, b)
-    int espacioOcupadoAdicional = 2 + ((esV2 && tamCelda != 0)? 1 : 0);
-    // 3 por el tamanio del registro
-    espacioOcupadoAdicional += (registro != 0x1)? 3 : 0;
-    // agregar el " + ", " - "
-    espacioOcupadoAdicional += (offset != 0 && registro != 0x1)? 3 : 0;
-    // Si el offset es 0, luego longitudNum(0) = 1. Por eso el if
-    if(offset == 0 && registro != 0x1)
-        espacioOcupadoOffset = 0;
-    else
-        espacioOcupadoOffset = longitudNum(offset);
-
-    identar(IDENTACION_MAX - espacioOcupadoOffset - espacioOcupadoAdicional);
-
-    if(esV2 && tamCelda != 0)
-        switch(tamCelda){
-            case(0x2):  printf("w"); break;
-            case(0x3):  printf("b"); break;
-            default:    errorDissasembler("Error: Tamaño celda invalido\n");
-        }
-
-    if(registro == 0x1)
-        printf("[%d", offset); //Es el DS, por lo tanto escribe: [offset]
-    else {
-        printf("[");
-        escribeRegistro(codReg, esV2);
-
-        if(offset < 0)
-            offset = -offset;
-
-        // Se agrega el offset si se puede
-        if(offset != 0)
-            printf("%s%d", offset > 0? " + ": " - ", offset);
-    }
-    printf("]");
-}
-
-void identar(int cant){
-    for(int i = 0; i < cant; i++)
-        printf(" ");
-}
-
-int longitudNum(long num) {
-    // Si es 0 ocupa un espacio pero no entra al while
-    int i = (num == 0);
-    // El signo "-" aporta a la longitud en caracteres
-    if(num < 0) {
-        num = -num;
-        i++;
-    }
-    while(num > 0){
-        num = num / 10;
-        i++;
-    }
-    return i;
-}
-
-void errorDissasembler(char msjError[]) {
-    printf("\n\n%s\n\n", msjError);
-    exit(1);
-}
 
 
 

@@ -48,12 +48,12 @@ cuatroBytes dato(cuatroBytes op, cuatroBytes registros[CANTREGISTROS], unByte *m
 }
 
 void cambiaCC(cuatroBytes resultado, cuatroBytes registros[CANTREGISTROS]) {
-	registros[8] = 0;
+	registros[17] = 0;
 	if (resultado == 0)
-    	registros[8] += 1;
+    	registros[17] += 1;
 	else if (resultado < 0)
-    	registros[8] += 2;
-	registros[8] = registros[8]<<30;
+    	registros[17] += 2;
+	registros[17] = registros[17]<<30;
 }
 
 cuatroBytes mascara(cuatroBytes sector) {
@@ -75,8 +75,9 @@ unByte tipoDeOperando(cuatroBytes byte) {
 dosBytes indiceDeMemoria(cuatroBytes op, cuatroBytes registro, dosBytes tabla[MAXSEGMENTOS][2]) {
     cuatroBytes baseEnReg = (registro&0xFFFF0000)>>16;
     cuatroBytes offsetEnReg = (registro&0x0000FFFF);
-    cuatroBytes offsetInstruccion = (op&0x00FFFF00)>>8;
+    cuatroBytes offsetInstruccion = (op&0x00FFFF);
     dosBytes indMem = tabla[baseEnReg][0]+offsetEnReg+offsetInstruccion;
+
     return indMem;
 }
 
