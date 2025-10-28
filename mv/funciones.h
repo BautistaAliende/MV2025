@@ -17,9 +17,9 @@ void SYS(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
     switch (opB) {
         case 1: sysRead(registros, memoria, tabla); break;
         case 2: sysWrite(registros, memoria, tabla); break;
-        //case 3: sysStringRead(registros, memoria, tabla); break;
-        //case 4: sysStringWrite(registros, memoria, tabla); break;
-        //case 7: clearscreen(); break;
+        case 3: sysStringRead(registros, memoria, tabla); break;
+        case 4: sysStringWrite(registros, memoria, tabla); break;
+        case 7: clearscreen(); break;
         case 15: break;
         default: {
             printf("Error: %d valor no válido para SYS.\n",opB);
@@ -64,17 +64,18 @@ void JNN(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 };
 void NOT(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
 	unByte tipo = tipoDeOperando(registros[6]);
-	int codigo = (registros[6]&0xF0)>>4;
 
 	excepcionTipoDeOperandoInvalido(tipo);
 	excepcionOperandoNulo(tipo);
 	excepcionGuardarEnInmediato(tipo);//,"NOT");
 
 	if (tipo == 1) {
+        int codigo = (registros[6]&0x1F);
         registros[codigo] = ~(registros[codigo]);
         cambiaCC(registros[codigo],registros);
 	} else
     	if (tipo == 3) {
+    	    int codigo = ((registros[6]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[6],registros[codigo],tabla);
 
         	for(unByte i=0;i<4;i++) {
@@ -96,16 +97,19 @@ void MOV(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 	excepcionGuardarEnInmediato(tipo);//,"MOV");
 
 	if (tipo==1) {
+	    //printf("Registro %4x\n", registros[5]);
         int codigo = (registros[5]&0x1F);
     	registros[codigo] = opB;
 	} else
     	if (tipo == 3) {
+    	    //printf("Memoria %4x\n", registros[5]);
     	    int codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
 
-            for(unByte i=0;i<4;i++) {
+            for(unByte i=3;i>=0;i--) {
                 verificarSegmento(codigo,indMem+i,registros,tabla);
-                memoria[indMem+i] = opB>>(8*(4-i-1));
+                memoria[indMem+i] = opB;
+                opB = opB>>8;
             }
         }
 }
@@ -135,15 +139,13 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
 
 	if (tipo == 1) {
         codigo = (registros[5]&0x1F);
-    	//unByte sector = (registros[5]&0x0C)>>2;
-    	//cuatroBytes mask = mascara(sector),
-        //            auxReg = registros[codigo]&mask;
+    	unByte sector = (registros[5]>>6)&0x03;
+    	cuatroBytes mask = mascara(sector),
+        auxReg = registros[codigo]&mask;
     	// Acomodar
-    	//if (sector == 2)
-        //    auxReg = auxReg>>8;
+    	if (sector == 2)
+            auxReg = auxReg>>8;
         // Operaciones
-
-        cuatroBytes auxReg = registros[codigo];
 
         switch(id) {
             case 0: auxReg += opB; break;
@@ -155,41 +157,42 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
             };
         }
         // Propagar signos
-        //if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
-        //
-        //    auxReg = auxReg|0xFFFFFF00;
-        //else if (sector == 3 && (auxReg&0x00008000))
-        //    auxReg = auxReg|0xFFFF0000;
+        //un solo byte
+        if ((sector == 1 || sector == 2) && (auxReg&0x00000080))      //
+            auxReg = auxReg|0xFFFFFF00;
+        else
+            if (sector == 3 && (auxReg&0x00008000))
+                auxReg = auxReg|0xFFFF0000;
 
         // cambiaCC
         cambiaCC(auxReg,registros);
 
         // Reacomodar
-        //if (sector == 2)
-        //    auxReg = auxReg<<8;
+        if (sector == 2)
+            auxReg = auxReg<<8;
         // Reevalúa
-        registros[codigo] = auxReg;//(registros[codigo]&(~mask))+(auxReg&mask);
+        registros[codigo] = (registros[codigo]&(~mask))+(auxReg&mask);
 	} else
     	if (tipo==3) {
+    	    //printf("OpB = %d\n", opB);
+
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	cuatroBytes auxMem = 0;
 
             //printf("indMem: %2x\n",indMem);
-
-            /*
-        	switch(codigo) {
-                case 1: verificarDS(indMem,registros,tabla); verificarDS(indMem+3,registros,tabla); break;
-                case 2: verificarES(indMem,registros,tabla); verificarES(indMem+3,registros,tabla); break;
-        	}
-        	*/
         	verificarSegmento(codigo,indMem,  registros,tabla);
         	verificarSegmento(codigo,indMem+3,registros,tabla);
+
+        	unByte b = 4-((registros[5]>>22)&0x03);
+            if (b == 3)
+                b--;
 
         	for(int i=0;i<4;i++) {
             	auxMem = auxMem<<8;
             	auxMem += (unsigned char)memoria[indMem+i];
         	}
+            //printf("AuxMem = %d\n", auxMem);
             switch (id) {
                 case 0: auxMem += opB; break;
                 case 1: auxMem -= opB; break;
@@ -199,10 +202,9 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
                     auxMem = (cuatroBytes)auxMem/opB;
                 }
             }
+
         	cambiaCC(auxMem,registros);
-        	//printf("indMem: %2x\n",indMem);
-        	//printf("auxMem: %2x\n",auxMem);
-        	for(int i=3;i>=0;i--) {
+        	for(char i=b-1;i>=0;i--) {
                 memoria[indMem+i] = auxMem;
                 auxMem = auxMem>>8;
         	}
@@ -227,17 +229,20 @@ void SWAP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
 
     if(tipoA == 1) {
         codigo = (registros[5]&0x1F);
-        //unByte sector = (opA&0x0C)>>2;
-        //cuatroBytes mask = mascara(sector);
+        unByte sector = (registros[5]>>6)&0x03;
+        cuatroBytes mask = mascara(sector);
 
-        //if (sector == 2)
-        //    auxB = auxB<<8;
-        registros[codigo] = auxB;//(registros[codigo]&(~mask))+(auxB&mask);
+        if (sector == 2)
+            auxB = auxB<<8;
+        registros[codigo] = (registros[codigo]&(~mask))+(auxB&mask);
     } else
         if (tipoA == 3) {
+            unByte b = 4-((registros[5]>>22)&0x03);
+            if (b==3)
+                b--;
             codigo = ((registros[5]>>16)&0x1F);
             dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
-            for(unByte i=0;i<4;i++) {
+            for(unByte i=0;i<b;i++) {
                 verificarSegmento(codigo,indMem+i,registros,tabla);
                 memoria[indMem+i] = auxB>>(8*(4-i-1));
             }
@@ -247,17 +252,22 @@ void SWAP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
 
     if (tipoB == 1) {
         codigo = (registros[6]&0x1F);
-        //unByte sector = (opB&0x0C)>>2;
-        //cuatroBytes mask = mascara(sector);
+        unByte sector = (registros[6]>>6)&0x03;
+        cuatroBytes mask = mascara(sector);
 
-        //if (sector == 2)
-        //    auxA = auxA<<8;
-        registros[codigo] = auxA;//(registros[codigo]&(~mask))+(auxA&mask);
+        if (sector == 2)
+           auxA = auxA<<8;
+        registros[codigo] = (registros[codigo]&(~mask))+(auxA&mask);
     } else
         if (tipoB == 3) {
+
+            unByte b = 4-((registros[6]>>22)&0x03);
+            if (b==3)
+                b--;
+
             codigo = ((registros[6])>>16&0x1F);
             dosBytes indMem = indiceDeMemoria(registros[6],registros[codigo],tabla);
-            for(unByte i=0;i<4;i++) {
+            for(unByte i=0;i<b;i++) {
                 //verificarDS(indMem+i,registros,tabla);
                 verificarSegmento(codigo,indMem+i,registros,tabla);
                 memoria[indMem+i] = auxA>>(8*(4-i-1));
@@ -280,15 +290,15 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
-    	//char sector = (opA&0x0C)>>2;
-    	//cuatroBytes mask = mascara(sector),
-        //           auxReg = registros[codigo]&mask;
-        //if (sector == 2)
-        //    auxReg = auxReg>>8;
-        //if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
-        //    auxReg = auxReg|0xFFFFFF00;
-        //else if (sector == 3 && (auxReg&0x00008000))
-        //    auxReg = auxReg|0xFFFF0000;
+        unByte sector = (registros[5]>>6)&0x03;
+    	cuatroBytes mask = mascara(sector),
+        auxReg = registros[codigo]&mask;
+        if (sector == 2)
+            auxReg = auxReg>>8;
+        if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
+            auxReg = auxReg|0xFFFFFF00;
+        else if (sector == 3 && (auxReg&0x00008000))
+            auxReg = auxReg|0xFFFF0000;
         auxReg = registros[codigo];
         auxReg -= opB;
         cambiaCC(auxReg,registros);
@@ -298,14 +308,10 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	cuatroBytes auxMem = 0;
 
-        	unByte b = 4;//-(registros[5]&0x03);
-            //if (b==3) b--;
-            /*
-        	switch (codigo) {
-                case 1: verificarDS(indMem,registros,tabla); verificarDS(indMem+3,registros,tabla); break;
-                case 2: verificarES(indMem,registros,tabla); verificarES(indMem+3,registros,tabla); break;
-        	}
-        	*/
+            unByte b = 4-((registros[5]>>22)&0x03);
+            if (b==3)
+                b--;
+
         	verificarSegmento(codigo,indMem,  registros,tabla);
         	verificarSegmento(codigo,indMem+3,registros,tabla);
 
@@ -326,24 +332,18 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
 	cuatroBytes codigo, auxReg;
 	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
-	//if (dir==0){    // Salta sólo por error del programador
-    //    printf("Error: shift id = 0.\n");
-    //    exit(1);
-	//}
-	//excepcionGuardarEnInmediato(tipo,(dir<0)?"SHL":"SHR");
-
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
-    	//unByte sector = (opA&0x0C)>>2;
-    	//cuatroBytes mask = mascara(sector),
-        //            auxReg = registros[codigo]&mask;
-        auxReg = registros[codigo];
-        //if (sector == 2)
-        //    auxReg = auxReg>>8;
-        //if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
-        //    auxReg = auxReg|0xFFFFFF00;
-        //else if (sector == 3 && (auxReg&0x00008000))
-        //    auxReg = auxReg|0xFFFF0000;
+        unByte sector = (registros[5]>>6)&0x03;
+    	cuatroBytes mask = mascara(sector),
+        auxReg = registros[codigo]&mask;
+
+        if (sector == 2)
+            auxReg = auxReg>>8;
+        if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
+            auxReg = auxReg|0xFFFFFF00;
+        else if (sector == 3 && (auxReg&0x00008000))
+            auxReg = auxReg|0xFFFF0000;
 
         if (dir < 0)
             auxReg = auxReg << opB;
@@ -355,46 +355,59 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
                 auxReg = auxauxReg;
             }
 
-        //if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
-        //    auxReg = auxReg|0xFFFFFF00;
-        //else if (sector == 3 && (auxReg&0x00008000))
-        //    auxReg = auxReg|0xFFFF0000;
+        if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
+            auxReg = auxReg|0xFFFFFF00;
+        else if (sector == 3 && (auxReg&0x00008000))
+            auxReg = auxReg|0xFFFF0000;
 
         cambiaCC(auxReg,registros);
-        //if (sector == 2)
-        //    auxReg = auxReg<<8;
+        if (sector == 2)
+            auxReg = auxReg<<8;
         registros[codigo] = auxReg;//(registros[codigo]&(~mask))+(auxReg&mask);
 	} else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
-
+            printf("OpB: %d\n", opB);
             auxReg = registros[codigo];
 
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
-        	long auxMem = 0;
+        	cuatroBytes auxMem = 0;
 
-        	//verificarDS(indMem,registros,tabla);
-        	//verificarDS(indMem+3,registros,tabla);
         	verificarSegmento(codigo,indMem,  registros,tabla);
         	verificarSegmento(codigo,indMem+3,registros,tabla);
 
-        	for(int i=0;i<4;i++) {
+            unByte b = 4-((registros[5]>>22)&0x03);
+            if (b==3)
+                b--;
+
+        	for(int i=0;i<b;i++) {
             	auxMem = auxMem<<8;
-            	auxMem += memoria[indMem+i];
+            	auxMem |= memoria[indMem+i];
+                printf("Lee: %2x\n", memoria[indMem+i]);
+                printf("AuxMem queda: %8x\n",auxMem);
         	}
 
-        if (dir < 0)
-            auxReg = auxReg << opB;
+        if (dir < 0){
+            auxMem = auxMem << opB;
+        }
         else
-            if (dir == 0)
-                auxReg = auxReg >> opB;
+            if (dir == 0){
+                //printf("Antes AUXREG: %8x\n", auxReg);
+                auxMem = auxMem >> opB;
+                //printf("Dsp AUXREG: %8x\n", auxReg);
+            }
             else{ //evito la propagación de signo del lenguaje C
-                uint64_t auxauxReg = auxReg >> opB;
-                auxReg = auxauxReg;
+                printf("AUXMEM: %8x\n", auxMem);
+                uint32_t auxauxMem = auxMem;
+                printf("AuxAuxMem: %8x\n", auxauxMem);
+                auxauxMem = auxauxMem >> opB;
+                printf("AuxAuxMem: %8x\n", auxauxMem);
+                auxMem = auxauxMem;
+                printf("AUXMEM: %8x\n", auxMem);
             }
 
         	cambiaCC(auxMem,registros);
-        	for(char i=3;i>=0;i--) {
+        	for(char i=b-1;i>=0;i--) {
                 memoria[indMem+i] = auxMem;
                 auxMem = auxMem>>8;
         	}
@@ -416,6 +429,8 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
 	cuatroBytes codigo;
 	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
+    printf("OperandoB: %d\n", opB);
+
 	char ol[5];
 	switch(id) {
         case 0: {strcpy(ol,"AND"); break;}
@@ -430,12 +445,12 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
-    	//unByte sector = (opA&0x0C)>>2;
-    	//cuatroBytes mask = mascara(sector),
-        cuatroBytes auxReg = registros[codigo];//&mask;
+    	unByte sector = (registros[5]>>6)&0x03;
+    	cuatroBytes mask = mascara(sector);
+        cuatroBytes auxReg = registros[codigo]&mask;
         // Acomodar
-        //if (sector == 2)
-        //   auxReg = auxReg>>8;
+        if (sector == 2)
+           auxReg = auxReg>>8;
         // Operaciones
         switch(id) {
             case 0: auxReg = auxReg&opB; break;
@@ -443,40 +458,46 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
             case 2: auxReg = auxReg^opB;
         }
         // Propagar signos
-        //if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
-        //    auxReg = auxReg|0xFFFFFF00;
-        //else if (sector == 3 && (auxReg&0x00008000))
-        //    auxReg = auxReg|0xFFFF0000;
+        if ((sector == 1 || sector == 2) && (auxReg&0x00000080))
+            auxReg = auxReg|0xFFFFFF00;
+        else if (sector == 3 && (auxReg&0x00008000))
+            auxReg = auxReg|0xFFFF0000;
         // cambiaCC
         cambiaCC(auxReg,registros);
         // Reacomodar
-        //if (sector == 2)
-        //    auxReg = auxReg<<8;
+        if (sector == 2)
+            auxReg = auxReg<<8;
         // Reevalúa
-        registros[codigo] = auxReg;//(registros[codigo]&(~mask))+(auxReg&mask);
+        registros[codigo] = (registros[codigo]&(~mask))+(auxReg&mask);
 	} else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	int auxMem = 0;
 
-        	unByte b = 4;//-(registros[5]&0x03);
-            //if (b==3) b--;
+        	unByte b = 4-((registros[5]>>22)&0x03);
+            if (b==3)
+                b--;
 
-        	//verificarDS(indMem,registros,tabla);
-        	//verificarDS(indMem+3,registros,tabla);
         	verificarSegmento(codigo,indMem,  registros,tabla);
         	verificarSegmento(codigo,indMem+3,registros,tabla);
 
         	for(int i=0;i<b;i++) {
             	auxMem = auxMem<<8;
-            	auxMem += memoria[indMem+i];
+            	auxMem |= memoria[indMem+i];
+
         	}
+
+            printf("OperandoA: %d\n", auxMem);
+
         	switch(id) {
                 case 0: auxMem = auxMem&opB; break;
                 case 1: auxMem = auxMem|opB; break;
                 case 2: auxMem = auxMem^opB;
             }
+
+            printf("Resultado de OpA: %d\n", auxMem);
+
         	cambiaCC(auxMem,registros);
         	for(char i=b-1;i>=0;i--) {
                 memoria[indMem+i] = auxMem;
@@ -507,36 +528,31 @@ void ld(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
 	excepcionGuardarEnInmediato(tipo);//,(bytes<0)?"LDH":"LDL");
 
 	if (tipo==1) {
-         codigo = (registros[5]&0x1F);
-    	//unByte sector = (registros[5]&0x0C)>>2;
+        codigo = (registros[5]&0x1F);
+    	unByte sector = (registros[5]>>6)&0x03;
     	cuatroBytes mask = (bytes<0) ? 0xFFFF0000 : 0x0000FFFF;
 
     	//ojo
-    	int sector =0;
-    	if (sector == 0)
+    	if (sector == 0){
             if (bytes<0)
                 opB = opB<<16;
-        registros[codigo] = (registros[codigo]&(~mask)) + (opB&mask);
-        //} else {
-        //   printf("Error [%s]: Se intentó cargar 2 bytes en una sección de registro.\n",(bytes<0)?"LDH":"LDL");
-        //    exit(1);
-    }
+            registros[codigo] = (registros[codigo]&(~mask)) + (opB&mask);
+        }else {
+           printf("Error [%s]: Se intentó cargar 2 bytes en una sección de registro.\n",(bytes<0)?"LDH":"LDL");
+           exit(1);
+        }
+	}
 	 else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
         	char a = (bytes<0) ? 0 : 2, // 1: LDL ; -1: LDH
                  b = a+2;
-            /*
-        	for(int i=b;i>a;i--) {
+
+        	for(unByte i=b-1;i>=a;i--) {
+            	verificarSegmento(codigo,indMem+i,registros,tabla);
             	memoria[indMem+i] = opB;
             	opB = opB>>8;
-        	}
-        	*/
-        	for(unByte i=a;i<b;i++) {
-                //verificarDS(indMem+i,registros,tabla);
-            	verificarSegmento(codigo,indMem+i,registros,tabla);
-            	memoria[indMem+i] = opB>>(8*(2-i-1));
         	}
     	}
 }
@@ -559,22 +575,17 @@ void RND(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
-    	//unByte sector = (opA&0x0C)>>2;
-        //cuatroBytes mask = mascara(sector);
+    	unByte sector = (registros[5]>>6)&0x03;
+        cuatroBytes mask = mascara(sector);
 
-    	//if (sector == 2)
-        //    opB = opB<<8;
-    	registros[codigo] = opB;//(registros[codigo]&(~mask)) + (opB&mask);
+    	if (sector == 2)
+            opB = opB<<8;
+    	registros[codigo] = (registros[codigo]&(~mask)) + (opB&mask);
 	} else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
-            /*
-        	for(char i=3;i>=0;i--) {
-            	memoria[indMem+i] = opB;
-            	opB = opB>>8;
-            }
-            */
+
             for(unByte i=0;i<4;i++) {
                 //verificarDS(indMem+i,registros,tabla);
             	verificarSegmento(codigo,indMem+i,registros,tabla);
@@ -590,9 +601,9 @@ void FEXC(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
 }
 //0A
 void PUSH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-    registros[6] -= 4;
-    unByte baseSP = baseSegmento(6,registros);
-    cuatroBytes indMem = tabla[baseSP][0]+(registros[6]&0xFFFF);
+    registros[7] -= 4;
+    unByte baseSP = baseSegmento(7,registros);
+    cuatroBytes indMem = tabla[baseSP][0]+(registros[7]&0xFFFF);
     verificarStackOverflow(indMem,registros,tabla);
 
     cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
@@ -603,8 +614,8 @@ void PUSH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
     }
 }
 void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-    int baseSP = registros[6]>>16;
-    int indMem = tabla[baseSP][0] + (registros[6]&0xFFFF);
+    int baseSP = registros[7]>>16;
+    int indMem = tabla[baseSP][0] + (registros[7]&0xFFFF);
     uint32_t dato = 0;
 
     for(unByte i=0;i<4;i++){
@@ -624,17 +635,17 @@ void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 
         registros[codigo] = (registros[codigo]&(~mask))+(dato&mask);
 
-        registros[6] += 4;
+        registros[7] += 4;
     } else
     if (tipo==3) {
-        dosBytes indMem = indiceDeMemoria(registros[6],registros[codigo],tabla);
+        dosBytes indMem = indiceDeMemoria(registros[7],registros[codigo],tabla);
 
         for(unByte i=3;i>=0;i--) {
             memoria[indMem+i] = dato;
             dato = dato>>8;
         }
 
-        registros[6] += 4;
+        registros[7] += 4;
     }
 }
 void CALL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){

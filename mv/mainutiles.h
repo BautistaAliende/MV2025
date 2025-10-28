@@ -2,40 +2,59 @@ void unaInstruccion(arregloFunciones *ops, cuatroBytes registros[CANTREGISTROS],
     dosBytes i;
     cuatroBytes opAux;
 
-    //verificarCS(registros[5],registros,tabla);
-    verificarSegmento(0,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
+    unByte opAMem = 0;
 
+    //verificarCS(registros[5],registros,tabla);
+    verificarSegmento(26,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
     registros[4] = memoria[tabla[registros[3]>>16][0] + (registros[3]&0xFFFF)];
+
     //printf("%x\n",tabla[registros[5]>>16][0] + (registros[5]&0xFFFF));
     //printf("%x\n",tabla[registros[13]>>16][0] + (registros[13]&0x0000FFFF));
 
     //printf("%3x\n",(unsigned int)registros[5]);
     (registros[3])++;
+
     // Lee operando B
     opAux = (registros[4])&0xC0;  // Guarda tipo de operando.
-    opAux = opAux<<24;
+    opAux = opAux<<18;
     registros[6] = 0;
     for(i=0;i<(((registros[4])>>6)&0x03);i++) {
         //verificarCS(registros[5],registros,tabla);
-        verificarSegmento(0,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
+        verificarSegmento(26,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
         registros[6] = registros[6]<<8;
         registros[6] += memoria[tabla[registros[3]>>16][0] + (registros[3]&0xFFFF)]&0x00FF;
         (registros[3])++;
     }
     registros[6] += opAux;
+
     // Lee operando A
+
+
     opAux = (registros[4])&0x30;
-    opAux = opAux<<26;
+    if (((opAux>>4)&0x03)==3)
+        opAMem = 1;
+
+    opAux = opAux<<20;
     registros[5] = 0;
     for(i=0;i<(((registros[4])>>4)&0x03);i++) {
         //verificarCS(registros[5],registros,tabla);
-        verificarSegmento(0,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
+        verificarSegmento(26,indiceDeMemoria(0,registros[3],tabla),registros,tabla);
         registros[5] = registros[5]<<8;
         registros[5] += memoria[tabla[registros[3]>>16][0] + (registros[3]&0xFFFF)]&0x00FF;
         (registros[3])++;
     }
     registros[5] += opAux;
-    ops[(registros[4])&0x1F](registros, memoria, tabla);
+    if (opAMem){
+        registros[0] = registros[(registros[5]>>16)&0x1F];
+        //printf("if Reg0 LAR: %8x\n",registros[0]);
+        registros[0]+= registros[5]&0x0FFFF;
+        //printf("if Reg0 LAR: %8x\n",registros[0]);
+        registros[1] = 0x00040000;
+        registros[1]+= (tabla[(registros[0]>>16)][0]+(registros[0]&0x0FFFF))&0x0FFFF;
+        registros[2] = dato(registros[6], registros, memoria, tabla);
+    }
+    registros[4] = registros[4]&0x1F;
+    ops[registros[4]](registros, memoria, tabla);
     /*
     printf("Registros\n");
         printf("A  %8x\n",registros[10]);

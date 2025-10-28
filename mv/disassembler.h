@@ -63,9 +63,9 @@ void escribeRegistro(unByte registro, int esV2){
         case(0x4): printf("OPC"); break;
         case(0x5): printf("OP1"); break;
         case(0x6): printf("OP2"); break;
-        //case(0x7): printf("RESERVA"); break;
-        //case(0x8): printf("CC"); break;
-        //case(0x9): printf("AC"); break;
+        case(0x7): printf("SP"); break;
+        case(0x8): printf("BP"); break;
+        //case(0x9): printf("RESERVADO"); break;
         case(0xA): printf("A"); break;
         case(0xB): printf("B"); break;
         case(0xC): printf("C"); break;
@@ -76,6 +76,10 @@ void escribeRegistro(unByte registro, int esV2){
         case(0x11): printf("CC"); break;
         case(0x1A): printf("CS"); break;
         case(0x1B): printf("DS"); break;
+        case(0x1C): printf("ES"); break;
+        case(0x1D): printf("SS"); break;
+        case(0x1E): printf("KS"); break;
+        case(0x1F): printf("PS"); break;
 
         default: errorDissasembler("Error: Registro inválido");
     }
@@ -106,10 +110,10 @@ void escribeInstruccion(unByte instruccion, int esV2){
         case 0x06: printf("JNP ");  break;
         case 0x07: printf("JNN ");  break;
         case 0x08: printf("NOT ");  break;
-        //case 0x0B: printf("PUSH");  break; // V2
-        //case 0x0C: printf("POP ");  break; // V2
-        //case 0x0D: printf("CALL");  break; // V2
-        //case 0x0E: printf("RET ");  break; // V2
+        case 0x0B: printf("PUSH");  break; // V2
+        case 0x0C: printf("POP ");  break; // V2
+        case 0x0D: printf("CALL");  break; // V2
+        case 0x0E: printf("RET ");  break; // V2
         case 0x0F: printf("STOP");  break;
         case 0x10: printf("MOV ");  break;
         case 0x11: printf("ADD ");  break;
@@ -135,8 +139,8 @@ void escribeInstruccion(unByte instruccion, int esV2){
 void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
     dosBytes offset = (bytesMemoria&0x0FFFF); //16 Bits del offset
     unByte codReg = ((bytesMemoria>>16)&0xFF);
-    unByte registro = (codReg&0x1F);//(codReg >> 4)&0xF;
-    unByte tamCelda = 0;//bytesMemoria&0x3;
+    unByte registro = (codReg&0x1F);
+    unByte tamCelda = (bytesMemoria>>22)&0x3;
     int espacioOcupadoOffset;
 
     if(!esV2 && tamCelda != 0)
@@ -145,11 +149,11 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
     // 2 por el tamanio [] y 1 por el operando de memoria (w, b)
     int espacioOcupadoAdicional = 2 + ((esV2 && tamCelda != 0)? 1 : 0);
     // 3 por el tamanio del registro
-    espacioOcupadoAdicional += (registro != 0x1)? 3 : 0;
+    espacioOcupadoAdicional += (registro != 0x1B)? 3 : 0;
     // agregar el " + ", " - "
-    espacioOcupadoAdicional += (offset != 0 && registro != 0x1)? 3 : 0;
+    espacioOcupadoAdicional += (offset != 0 && registro != 0x1B)? 3 : 0;
     // Si el offset es 0, luego longitudNum(0) = 1. Por eso el if
-    if(offset == 0 && registro != 0x1)
+    if(offset == 0 && registro != 0x1B)
         espacioOcupadoOffset = 0;
     else
         espacioOcupadoOffset = longitudNum(offset);
@@ -163,7 +167,7 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
             default:    errorDissasembler("Error: Tamaño celda invalido\n");
         }
 
-    if(registro == 0x1)
+    if(registro == 0x1B)
         printf("[%d", offset); //Es el DS, por lo tanto escribe: [offset]
     else {
         printf("[");
@@ -184,12 +188,6 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
 void escribeOperando(unByte op, int ir, unByte memoria[], int esV2){
     dosBytes inmediato;
     cuatroBytes bytesMemoria;
-
-
-    //printf("Entre a escribeoperando\n");
-    //printf("op: %2x\n", op);
-    //printf("ir: %2x\n", ir);
-    //printf("memir: %2x\n", memoria[ir]);
 
     switch(op&0xF){
         // (00) Ninguno
@@ -217,12 +215,13 @@ void escribeOperando(unByte op, int ir, unByte memoria[], int esV2){
 void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes entryPoint, int esV2, unByte memoria[MAXMEMORIA]){
     unByte bitsA, bitsB, codOp;
     int i, nroBytes, cantBytesLeidos;
+    //printf("inicio: %d\n", inicio);
     int ir = inicio>-1 ? inicio : inicioCS;
+    //printf("ir: %d\n", ir);
     printf("\n\n");
+    //printf("Dissasembler 221\n");
 
-    /*
     while(ir < inicioCS){
-        //printf("Entre a la 216\n");
         printf(" [%04X]", ir);
         i = ir;
         cantBytesLeidos = 0;
@@ -254,11 +253,10 @@ void disassembler(dosBytes inicio, dosBytes inicioCS, dosBytes longCS, dosBytes 
         ir++;
     }
 
-    */
-
     ir = inicioCS;
 
     // empieza la diversion
+
     while(ir < inicioCS+longCS){
         printf(ir==inicioCS+entryPoint ? ">" : " ");
 

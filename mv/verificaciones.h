@@ -17,7 +17,9 @@ unByte baseSegmento(unByte id, cuatroBytes registros[CANTREGISTROS]) {
 
 void verificarSegmento(unByte id, cuatroBytes x, cuatroBytes registros[CANTREGISTROS], dosBytes tabla[MAXSEGMENTOS][2]) {
     // id representa al índice de registro
+
     int base = baseSegmento(id,registros);
+
     dosBytes min = tabla[base][0];
     cuatroBytes max = (unsigned short)tabla[base][0]+(unsigned short)tabla[base][1];
 
@@ -25,9 +27,9 @@ void verificarSegmento(unByte id, cuatroBytes x, cuatroBytes registros[CANTREGIS
         switch(base) {
             case 0: printf("CS excedido - el programa llegó precipitadamente a su fin.\n"); break;
             case 1: printf("DS excedido.\n"); break;
-            //case 2: printf("ES excedido.\n"); break;
-            //case 3: printf("SS excedido.\n"); break;
-            //case 4: printf("KS excedido.\n"); break;
+            case 2: printf("ES excedido.\n"); break;
+            case 3: printf("SS excedido.\n"); break;
+            case 4: printf("KS excedido.\n"); break;
         }
         exit(1);
     }
@@ -73,8 +75,5 @@ void excepcionGuardarEnInmediato(unByte tipo){//, char nombre[MAXNOMBRE]) {
         exit(1);
 	}
 }
-// excepción división por cero en funciones.h > operacionesAritmeticas(...)
-// excepción instrucción inválidad en main.c > main(...) y disassembler.h > disassembler(...)
-
 
 

@@ -11,7 +11,6 @@ void escribirBinarioComp2(cuatroBytes x);
 cuatroBytes dato(cuatroBytes op, cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2]) {
 	char tipo = tipoDeOperando(op);
 
-
     cuatroBytes ret;
 
 	excepcionOperandoNulo(tipo);
@@ -20,7 +19,17 @@ cuatroBytes dato(cuatroBytes op, cuatroBytes registros[CANTREGISTROS], unByte *m
 	switch(tipo) {
     	case 1: {
     	    int codigo = ((op)&0x1F);
-        	op = registros[codigo];
+        	unByte sector = (op>>6)&0x03;
+        	cuatroBytes mask = mascara(sector);
+        	op = registros[codigo]&mask;
+
+            if (sector == 2)
+                op = op>>8;
+            if ((sector == 1 || sector == 2) && (op&0x00000080))
+                op = op|0xFFFFFF00;
+            else if (sector == 3 && (op&0x00008000))
+                    op = op|0xFFFF0000;
+
         	break;
     	}
     	case 2: {
@@ -32,7 +41,9 @@ cuatroBytes dato(cuatroBytes op, cuatroBytes registros[CANTREGISTROS], unByte *m
     	case 3: {
     	    int codigo = ((op>>16)&0x1F);
             dosBytes indMem = indiceDeMemoria(op,registros[codigo],tabla);
-            unByte b = 4;
+            unByte b = 4-((op>>22)&0x03);
+            if (b==3)
+                b--;
             op = 0;
 
             for(int i=0;i<b;i++) {
@@ -67,8 +78,8 @@ cuatroBytes mascara(cuatroBytes sector) {
     }
 }
 unByte tipoDeOperando(cuatroBytes byte) {
-    cuatroBytes top = byte&0xC0000000;
-    top = top>>30;
+    cuatroBytes top = byte&0x3000000;
+    top = top>>24;
     top = top&0x00000003;
     return top;
 }

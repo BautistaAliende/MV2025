@@ -62,12 +62,7 @@ void sysRead(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], d
                 }
             }
         }
-            /*
-            for (j=tamanyoCeldas*(i+1)-1;j>=tamanyoCeldas*i;j--){
-                memoria[indiceMemoria+j] = datoEdx&0x00FF;
-                datoEdx = datoEdx>>8;
-            }
-            */
+
         for(j=0;j<tamanyoCeldas;j++){
             //verificarDS(indiceMemoria+tamanyoCeldas*i+j,registros,tabla);
             verificarSegmento(13,indiceMemoria+tamanyoCeldas*i+j,registros,tabla);
@@ -93,19 +88,9 @@ void sysWrite(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], 
     int formato;
 
     for (i=0;i<cantCeldas;i++){
-            /*
-            switch (baseEdx) {
-                case 1: verificarDS(indiceMemoria+tamanyoCeldas*i,registros,tabla); verificarDS(indiceMemoria+tamanyoCeldas*(i+1),registros,tabla); break;
-                case 2: verificarES(indiceMemoria+tamanyoCeldas*i,registros,tabla); verificarES(indiceMemoria+tamanyoCeldas*(i+1),registros,tabla); break;
-            }
-            */
+
             verificarSegmento(13,indiceMemoria+tamanyoCeldas*i,registros,tabla);
-            /*
-            for (j=(tamanyoCeldas*i);j<(tamanyoCeldas*(i+1));j++){
-                datoEdx = datoEdx<<8;
-                datoEdx += (unsigned char)memoria[indiceMemoria+j];
-            }
-            */
+
             //printf("indMem: %2x\n",indiceMemoria+tamanyoCeldas*i);
             datoEdx = (memoria[indiceMemoria+tamanyoCeldas*i]&0x80) ? -1 : 0;
             //printf("tamanio celdas: %d\n",tamanyoCeldas);
@@ -145,11 +130,11 @@ void sysWrite(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], 
             printf("\n");
         }
 }
-/*
+
 void sysStringRead(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]) {
     int maxChars = registros[0xC]&0xFFFF;
     if (maxChars == 0xFFFF)
-        maxChars = tabla[registros[0xC]>>16][1];
+        maxChars = MAXMEMORIA;//tabla[registros[0xC]>>16][1];
     long baseEdx = (registros[13]&0xFFFF0000)>>16;
     long offsetEdx = (registros[13]&0x0000FFFF);
     cuatroBytes indiceMemoria = tabla[baseEdx][0]+offsetEdx;
@@ -158,7 +143,7 @@ void sysStringRead(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMOR
 
     //printf("[%04X]: ",indiceMemoria);
     fgets(str,maxChars+1,stdin);
-    while (i<maxChars && str[i]!='\n'){
+    while (i<maxChars && i<MAXMEMORIA && str[i]!='\n'){
         memoria[indiceMemoria+i] = str[i];
         i++;
     }
@@ -183,7 +168,7 @@ void clearscreen() {
     printf("\033[H");
 }
 
-void breakpoint(char* filename, dosBytes tamanyoMemoria, unByte *instruccion, cuatroBytes *opA, cuatroBytes *opB, arregloFunciones *ops, cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2]) {
+void breakpoint(char* filename, dosBytes tamanyoMemoria, arregloFunciones *ops, cuatroBytes registros[CANTREGISTROS], unByte *memoria, dosBytes tabla[MAXSEGMENTOS][2]) {
     FILE *f;
     f = fopen(filename,"wb");
     if (f==NULL){
@@ -198,7 +183,7 @@ void breakpoint(char* filename, dosBytes tamanyoMemoria, unByte *instruccion, cu
     fwrite(&tamanyoMemoria,2,1,f);
     cuatroBytes i;
     for(i=0;i<CANTREGISTROS;i++)
-        fwrite(&(registros[0]),1,4,f);
+        fwrite(&(registros[26]),1,4,f);
     for(i=0;i<MAXSEGMENTOS;i++){
         fwrite(&(tabla[i][0]),1,2,f);
         fwrite(&(tabla[i][1]),1,2,f);
@@ -212,14 +197,13 @@ void breakpoint(char* filename, dosBytes tamanyoMemoria, unByte *instruccion, cu
     while (c!='g' || c !='q' || c!='\n');
 
     if (c=='\n')
-        unaInstruccion(instruccion,opA,opB,ops,registros,memoria,tabla);
+        unaInstruccion(ops,registros,memoria,tabla);
     else
     if (c=='q'){
         printf("Se hizo un breakpoint y se apretó q de quit.\n");
         exit(1);
     }
 }
-*/
 
 
 
