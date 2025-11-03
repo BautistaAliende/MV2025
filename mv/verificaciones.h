@@ -40,20 +40,21 @@ void verificarSegmento(unByte id, cuatroBytes x, cuatroBytes registros[CANTREGIS
     Escribo esto por si hay que volver a ellas.
 */
 void verificarStackOverflow(cuatroBytes x, cuatroBytes registros[CANTREGISTROS], dosBytes tabla[MAXSEGMENTOS][2]) {
-    int baseSS = baseSegmento(3,registros);
+    int baseSS = baseSegmento(29,registros);
     dosBytes min = tabla[baseSS][0];
+    dosBytes max = min+tabla[baseSS][1];
 
-    if (x<min) {
+    if (x<min || x>max) {
         printf("Error: Stack overflow.\n");
         exit(1);
     }
 }
 void verificarStackUnderflow(cuatroBytes x, cuatroBytes registros[CANTREGISTROS], dosBytes tabla[MAXSEGMENTOS][2]) {
-    int baseSS = baseSegmento(3,registros);
+    int baseSS = baseSegmento(29,registros);
     cuatroBytes max = (unsigned short)tabla[baseSS][0] + (unsigned short)tabla[baseSS][1];
 
     if (x>=max) {
-        printf("Error: Stack overflow.\n");
+        printf("Error: Stack Underflow.\n");
         exit(1);
     }
 }

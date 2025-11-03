@@ -40,7 +40,7 @@ void errorDissasembler(char msjError[]) {
 
 // Todos los registros deben ocupar siempre 3 caracteres
 void escribeRegistro(unByte registro, int esV2){
-    unByte sectorReg = (registro >> 2)&0x3;
+    unByte sectorReg = (registro >> 6)&0x3;
     registro = registro&0x1F;//(registro >> 4)&0xF;
 
     //printf("Entre a escribe registro\n");
@@ -49,7 +49,7 @@ void escribeRegistro(unByte registro, int esV2){
     if(!esV2 && (( 7 <= registro && registro <= 9) || (18 <= registro && registro <= 25)|| (28 <= registro && registro <= 31) ))
       errorDissasembler("Error: Registro inválido para la versión de la máquina.\n");
 
-    sectorReg = 0; //: Registro completo
+    //sectorReg = 0; //: Registro completo
     if(sectorReg == 0 && registro >= 0xA && registro <= 0xF)
         printf("E");
     else
@@ -138,10 +138,11 @@ void escribeInstruccion(unByte instruccion, int esV2){
 
 void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
     dosBytes offset = (bytesMemoria&0x0FFFF); //16 Bits del offset
-    unByte codReg = ((bytesMemoria>>16)&0xFF);
-    unByte registro = (codReg&0x1F);
+    unByte codReg = ((bytesMemoria>>16)&0x1F);
+    unByte registro = codReg;//(codReg&0x1F);
     unByte tamCelda = (bytesMemoria>>22)&0x3;
     int espacioOcupadoOffset;
+    unByte offsetNEGATIVO = 0;
 
     if(!esV2 && tamCelda != 0)
         errorDissasembler("Error: Tamaño de celda invalido para esta version");
@@ -162,6 +163,7 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
 
     if(esV2 && tamCelda != 0)
         switch(tamCelda){
+            case(0x1):  printf("l"); break;
             case(0x2):  printf("w"); break;
             case(0x3):  printf("b"); break;
             default:    errorDissasembler("Error: Tamaño celda invalido\n");
@@ -173,12 +175,16 @@ void escribeMemoria(cuatroBytes bytesMemoria, int esV2){
         printf("[");
         escribeRegistro(codReg, esV2);
 
-        if(offset < 0)
+        if(offset&0x08000){
+            offsetNEGATIVO = 1;
+            offset = 0xFFFF0000 | offset;
             offset = -offset;
+        }
+
 
         // Se agrega el offset si se puede
         if(offset != 0)
-            printf("%s%d", offset > 0? " + ": " - ", offset);
+            printf("%s%d", !offsetNEGATIVO? " + ": " - ", offset);
     }
     printf("]");
 }

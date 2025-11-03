@@ -154,13 +154,14 @@ void sysStringWrite(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMO
     long baseEdx = (registros[13]&0xFFFF0000)>>16;
     long offsetEdx = (registros[13]&0x0000FFFF);
     cuatroBytes i = tabla[baseEdx][0]+offsetEdx;
+    //char c;
 
     //printf("[%04X]: ",i);
     while(memoria[i]!=0){
         printf("%c",memoria[i]);
         i++;
     }
-    printf("\n");
+    //printf("\n");
 }
 
 void clearscreen() {

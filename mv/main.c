@@ -195,12 +195,14 @@ int main(int argc, char *argv[]) {
                     for(j=0;j<strlen(argv[i]);j++) {
                         verificarAlmacenamientoPS(memDisponible,posMem);
                         memoria[posMem] = argv[i][j];
+                        //printf("Argv[i][j]: %d\n", argv[i][j]);
                         posMem++;
                     }
                     verificarAlmacenamientoPS(memDisponible,posMem);
                     memoria[posMem] = 0;
                     offsets[i-contArg] = posMem - strlen(argv[i]);
                     posMem++;
+                    //printf("PosMem: %d\n",posMem);
                 }
                 // Pone los punteros a cada string
                 if (argc-contArg>0)
@@ -228,11 +230,11 @@ int main(int argc, char *argv[]) {
             posMem += longKS;
             posMem += longCS;
 
-            ponerSegmentoEnTabla(1,posMem,&indiceSegmento,longDS,registros,tabla);
+            ponerSegmentoEnTabla(27,posMem,&indiceSegmento,longDS,registros,tabla);
             posMem += longDS;
-            ponerSegmentoEnTabla(2,posMem,&indiceSegmento,longES,registros,tabla);
+            ponerSegmentoEnTabla(28,posMem,&indiceSegmento,longES,registros,tabla);
             posMem += longES;
-            ponerSegmentoEnTabla(3,posMem,&indiceSegmento,longSS,registros,tabla);
+            ponerSegmentoEnTabla(29,posMem,&indiceSegmento,longSS,registros,tabla);
             posMem += longSS;
             registros[3] = registros[26] + entryPoint;
 
@@ -298,7 +300,7 @@ int main(int argc, char *argv[]) {
         }
 
         longCS = tabla[registros[26]>>16][1];
-        printf("longCS %d\n",longCS);
+        //printf("longCS %d\n",longCS);
     }
 
     //for (int k=0;k<50;k++)
@@ -322,17 +324,31 @@ int main(int argc, char *argv[]) {
 	// IPea
 	cuatroBytes maxIP = registros[26]+tabla[registros[26]>>16][1];
 
-    //printf("Tabla\n");
-	//for(int iii=0;iii<MAXSEGMENTOS;iii++)
-    //    printf("%d | %d - %d\n",iii,tabla[iii][0], tabla[iii][1]);
+    printf("Tabla\n");
+	for(int iii=0;iii<MAXSEGMENTOS;iii++)
+        printf("%d | %d - %d\n",iii,tabla[iii][0], tabla[iii][1]);
 
 
     while(registros[26]<=registros[3] && registros[3]<=maxIP) { // while el valor de IP sea menor al tamaño del CS
-          //for (int reg=0; reg<32; reg++)
-           // printf("%2d - %8x\n", reg, registros[reg]);
-        //printf("%2x \n", registros[3]);
-        //for (int mem=0; mem<10; mem++)
-        //    printf("%2d - %8x\n", mem, memoria[tabla[1][0]+mem]);
+
+        //printf("IP: %2x \n", registros[3]+tabla[0][1]+tabla[1][1]);
+        //printf("\n");
+        //printf("REGISTROS\n");
+        //for (int reg=3; reg<16; reg++)
+        //   printf("%2d - %8x\n", reg, registros[reg]);
+        //printf("\n");
+        //printf("ExtraSegment\n");
+        //for (int mem=0; mem<20; mem++)
+        //   printf("%2d - %8x\n", mem, memoria[tabla[4][0]+mem]);
+        //printf("\n");
+
+        //printf("PILA\n");
+        //for (int mem=950; mem<tabla[5][1]; mem++)
+        //   printf("%2d - %8x\n", mem, memoria[tabla[5][0]+mem]);
+        //printf("\n");
+
+
+
         //for (int mem=39; mem<60; mem++)
         //    printf("%2d - %8x\n", mem, memoria[tabla[1][0]+mem]);
 

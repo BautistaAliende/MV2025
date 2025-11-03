@@ -1,6 +1,6 @@
 #define CANTREGISTROS 32
 #define MAXMEMORIA 16384
-#define MAXSEGMENTOS 2
+#define MAXSEGMENTOS 6
 #define LONGIDENTIFICADOR 5
 
 typedef int8_t unByte;

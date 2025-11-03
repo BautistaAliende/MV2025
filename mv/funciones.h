@@ -96,17 +96,36 @@ void MOV(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 	cuatroBytes opB = dato(registros[6],registros, memoria,tabla);
 	excepcionGuardarEnInmediato(tipo);//,"MOV");
 
+	//printf("SOY MOV\n");
 	if (tipo==1) {
+        //printf("Opb: %8x\n", opB);
+	    int codigo = (registros[5]&0x1F);
+        char sector = (registros[5]>>6)&0x03;
+        //printf("Sector: %8x\n", sector);
+    	cuatroBytes mask = mascara(sector);
+    	//printf("Mask: %8x\n", mask);
+    	if (sector == 2)
+            opB = opB<<8;
+        //printf("RegistroCodigo NOT MASK: %8x\n", registros[codigo]&(~mask));
+        //printf("OPB MASK: %8x\n", opB&mask);
+
+    	registros[codigo] = (registros[codigo]&(~mask)) + (opB&mask);
+
 	    //printf("Registro %4x\n", registros[5]);
-        int codigo = (registros[5]&0x1F);
-    	registros[codigo] = opB;
+        //int codigo = (registros[5]&0x1F);
+    	//registros[codigo] = opB;
 	} else
     	if (tipo == 3) {
-    	    //printf("Memoria %4x\n", registros[5]);
+
+    	    //printf("Entre a tipo3\n");
     	    int codigo = ((registros[5]>>16)&0x1F);
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
 
-            for(unByte i=3;i>=0;i--) {
+            unByte b = 4-((registros[5]>>22)&0x03);
+            if (b==3)
+                b--;
+
+            for(unByte i=b-1;i>=0;i--) {
                 verificarSegmento(codigo,indMem+i,registros,tabla);
                 memoria[indMem+i] = opB;
                 opB = opB>>8;
@@ -118,6 +137,8 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
 	unByte tipo = tipoDeOperando(registros[5]);
 	cuatroBytes codigo;
 	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
+
+    //printf("Sub OPB: %d\n", opB);
 
 	char oa[5];
 	switch (id) {
@@ -138,15 +159,20 @@ void operacionesAritmeticas(cuatroBytes registros[CANTREGISTROS], unByte memoria
 	}
 
 	if (tipo == 1) {
+
         codigo = (registros[5]&0x1F);
+        //printf("SUB Reg5 osea OP1: %8x\n", registros[5]);
+        //printf("SUB RegCodigo: %8x\n", registros[codigo]);
     	unByte sector = (registros[5]>>6)&0x03;
-    	cuatroBytes mask = mascara(sector),
-        auxReg = registros[codigo]&mask;
+    	//printf("SUB Sector: %8x\n", sector);
+    	cuatroBytes mask = mascara(sector);
+    	//printf("SUB Mascara: %8x\n", mask);
+        cuatroBytes auxReg = registros[codigo]&mask;
     	// Acomodar
     	if (sector == 2)
             auxReg = auxReg>>8;
         // Operaciones
-
+        //printf("Sub OPA: %d\n", auxReg);
         switch(id) {
             case 0: auxReg += opB; break;
             case 1: auxReg -= opB; break;
@@ -288,6 +314,7 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
 	cuatroBytes opB = dato(registros[6], registros,memoria,tabla);
 	excepcionGuardarEnInmediato(tipo);//,"CMP");
 
+    //printf("CMP opB: %d\n", opB);
 	if (tipo==1) {
         codigo = (registros[5]&0x1F);
         unByte sector = (registros[5]>>6)&0x03;
@@ -299,8 +326,12 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
             auxReg = auxReg|0xFFFFFF00;
         else if (sector == 3 && (auxReg&0x00008000))
             auxReg = auxReg|0xFFFF0000;
-        auxReg = registros[codigo];
+        //auxReg = registros[codigo];
+
+        //printf("CMP AuxReg: %d\n", auxReg);
+
         auxReg -= opB;
+
         cambiaCC(auxReg,registros);
 	} else
     	if (tipo==3) {
@@ -322,6 +353,7 @@ void CMP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
             	auxMem = auxMem<<8;
             	auxMem += (unsigned char)memoria[indMem+i];
         	}
+
         	auxMem -= opB;
         	cambiaCC(auxMem,registros);
         }
@@ -367,7 +399,7 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
 	} else
     	if (tipo==3) {
             codigo = ((registros[5]>>16)&0x1F);
-            printf("OpB: %d\n", opB);
+            //printf("OpB: %d\n", opB);
             auxReg = registros[codigo];
 
         	dosBytes indMem = indiceDeMemoria(registros[5],registros[codigo],tabla);
@@ -383,8 +415,8 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
         	for(int i=0;i<b;i++) {
             	auxMem = auxMem<<8;
             	auxMem |= memoria[indMem+i];
-                printf("Lee: %2x\n", memoria[indMem+i]);
-                printf("AuxMem queda: %8x\n",auxMem);
+                //printf("Lee: %2x\n", memoria[indMem+i]);
+                //printf("AuxMem queda: %8x\n",auxMem);
         	}
 
         if (dir < 0){
@@ -397,13 +429,13 @@ void sh(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosByt
                 //printf("Dsp AUXREG: %8x\n", auxReg);
             }
             else{ //evito la propagación de signo del lenguaje C
-                printf("AUXMEM: %8x\n", auxMem);
+                //printf("AUXMEM: %8x\n", auxMem);
                 uint32_t auxauxMem = auxMem;
-                printf("AuxAuxMem: %8x\n", auxauxMem);
+                //printf("AuxAuxMem: %8x\n", auxauxMem);
                 auxauxMem = auxauxMem >> opB;
-                printf("AuxAuxMem: %8x\n", auxauxMem);
+                //printf("AuxAuxMem: %8x\n", auxauxMem);
                 auxMem = auxauxMem;
-                printf("AUXMEM: %8x\n", auxMem);
+                //printf("AUXMEM: %8x\n",auxMem);
             }
 
         	cambiaCC(auxMem,registros);
@@ -429,7 +461,7 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
 	cuatroBytes codigo;
 	cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
-    printf("OperandoB: %d\n", opB);
+    //printf("OperandoB: %d\n", opB);
 
 	char ol[5];
 	switch(id) {
@@ -482,13 +514,14 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
         	verificarSegmento(codigo,indMem,  registros,tabla);
         	verificarSegmento(codigo,indMem+3,registros,tabla);
 
+            //printf("indMem2: %d\n", indMem);
         	for(int i=0;i<b;i++) {
             	auxMem = auxMem<<8;
             	auxMem |= memoria[indMem+i];
 
         	}
 
-            printf("OperandoA: %d\n", auxMem);
+            //printf("OperandoA: %d\n", auxMem);
 
         	switch(id) {
                 case 0: auxMem = auxMem&opB; break;
@@ -496,10 +529,13 @@ void operacionesBitABit(cuatroBytes registros[CANTREGISTROS], unByte *memoria, d
                 case 2: auxMem = auxMem^opB;
             }
 
-            printf("Resultado de OpA: %d\n", auxMem);
+            //printf("Resultado de OpA: %d\n", auxMem);
 
         	cambiaCC(auxMem,registros);
+        	//printf("b: %d\n", b);
+
         	for(char i=b-1;i>=0;i--) {
+                //printf("indMem: %d\n", indMem);
                 memoria[indMem+i] = auxMem;
                 auxMem = auxMem>>8;
         	}
@@ -602,16 +638,21 @@ void FEXC(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosB
 //0A
 void PUSH(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
     registros[7] -= 4;
-    unByte baseSP = baseSegmento(7,registros);
+    unByte baseSP = baseSegmento(29,registros);
+
     cuatroBytes indMem = tabla[baseSP][0]+(registros[7]&0xFFFF);
+
     verificarStackOverflow(indMem,registros,tabla);
 
     cuatroBytes opB = dato(registros[6],registros,memoria,tabla);
 
+    //printf("Opb: %8x\n", opB);
     for(unByte i=3; i>=0; i--){
+        verificarStackOverflow(indMem,registros,tabla);
         memoria[indMem+i] = opB;
         opB = opB>>8;
     }
+
 }
 void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
     int baseSP = registros[7]>>16;
@@ -625,10 +666,11 @@ void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
     }
 
     int tipo = tipoDeOperando(registros[6]);
-    int codigo = (registros[6]&0xF0)>>4;
-
+    int codigo = registros[6]&0x1F;
+    //printf("Tipo: %d\n", tipo);
+    //printf("Codigo: %d\n", codigo);
     if (tipo==1) {
-        int sector = (registros[6]&0x0C)>>2;
+        int sector = (registros[6]>>6)&0x03;
         if (sector == 2)
             dato = dato<<8;
         int mask = mascara(sector);
@@ -649,12 +691,15 @@ void POP(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBy
     }
 }
 void CALL(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-    //cuatroBytes auxOpB = (0x40000050);
-    PUSH(registros,memoria,tabla);
+    cuatroBytes aux = registros[6];
+    //printf("Reg3: %2x\n", registros[3]);
+    registros[6] = 0x1000003;
+    PUSH(registros, memoria,tabla);
+    registros[6] = aux;
     JMP(registros,memoria,tabla);
 }
 void RET(cuatroBytes registros[CANTREGISTROS], unByte memoria[MAXMEMORIA], dosBytes tabla[MAXSEGMENTOS][2]){
-    //cuatroBytes auxOpB = (0x40000050);
+    registros[6] = (0x1000003);
     POP(registros, memoria, tabla);
 }
 

@@ -18,6 +18,7 @@ cuatroBytes dato(cuatroBytes op, cuatroBytes registros[CANTREGISTROS], unByte *m
 
 	switch(tipo) {
     	case 1: {
+    	    //printf("Entre a DATO tipo 1\n");
     	    int codigo = ((op)&0x1F);
         	unByte sector = (op>>6)&0x03;
         	cuatroBytes mask = mascara(sector);
@@ -86,7 +87,14 @@ unByte tipoDeOperando(cuatroBytes byte) {
 dosBytes indiceDeMemoria(cuatroBytes op, cuatroBytes registro, dosBytes tabla[MAXSEGMENTOS][2]) {
     cuatroBytes baseEnReg = (registro&0xFFFF0000)>>16;
     cuatroBytes offsetEnReg = (registro&0x0000FFFF);
+    if (offsetEnReg&0x08000)
+        offsetEnReg = 0xFFFF0000 | offsetEnReg;
+    //printf("OffsetEnReg: %d\n", offsetEnReg);
     cuatroBytes offsetInstruccion = (op&0x00FFFF);
+    if (offsetInstruccion&0x08000)
+        offsetInstruccion = 0xFFFF0000 | offsetInstruccion;
+    //printf("OffsetInstruccion: %d\n", offsetInstruccion);
+
     dosBytes indMem = tabla[baseEnReg][0]+offsetEnReg+offsetInstruccion;
 
     return indMem;
